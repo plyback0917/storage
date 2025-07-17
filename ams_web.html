@@ -1,0 +1,2128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ammunition Package Manager</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .section {
+            margin: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+
+        .section h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-group label {
+            font-weight: bold;
+            color: #555;
+        }
+
+        input, select, button {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        button {
+            background: #3498db;
+            color: white;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+        button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        #canvas-container {
+            text-align: center;
+            margin: 20px;
+        }
+
+        #grid-canvas {
+            border: 2px solid #34495e;
+            background: white;
+            cursor: crosshair;
+            max-width: 100%;
+        }
+
+        #three-container {
+            width: 100%;
+            height: 600px;
+            background: #f0f0f0;
+            border: 2px solid #34495e;
+            display: none;
+        }
+
+        .controls {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .status.success {
+            background: #d5edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .info-section {
+            background: #e8f4fd;
+            border: 1px solid #b8e6ff;
+            padding: 15px;
+            margin: 20px;
+            border-radius: 5px;
+        }
+
+        .info-section h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .navigation-help {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .package-details {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        #rotation-status {
+            font-weight: bold;
+            color: #e74c3c;
+        }
+
+        .view-controls {
+            background: #2c3e50;
+            color: white;
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .view-controls button {
+            background: #34495e;
+            border: none;
+            padding: 8px 15px;
+            margin: 2px;
+        }
+
+        .view-controls button:hover {
+            background: #4a6fa5;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: black;
+        }
+
+        .package-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .remove-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .remove-btn:hover {
+            background: #c0392b;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .container {
+                margin: 5px;
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Ammunition Package Manager</h1>
+            <p>Web-based version with 2D/3D visualization</p>
+        </div>
+
+        <!-- File Operations -->
+        <div class="section">
+            <h3>File Operations</h3>
+            <div class="button-group">
+                <button onclick="loadFromFile()">Load From File</button>
+                <button onclick="saveToFile()">Save To File</button>
+                <input type="file" id="file-input" accept=".xlsx" style="display: none;" onchange="handleFileLoad(event)">
+            </div>
+        </div>
+
+        <!-- Grid Setup -->
+        <div class="section">
+            <h3>Grid Setup</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="grid-width">Grid Width (X):</label>
+                    <input type="number" id="grid-width" value="100" min="1" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="grid-height">Grid Height (Y):</label>
+                    <input type="number" id="grid-height" value="100" min="1" step="0.1">
+                </div>
+                <button onclick="createGrid()">Create Grid</button>
+            </div>
+        </div>
+
+        <!-- Package Placement -->
+        <div class="section hidden" id="package-section">
+            <h3>Ammunition Placement</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="start-x">Start X:</label>
+                    <input type="number" id="start-x" value="0" step="0.1" oninput="updatePreview()">
+                </div>
+                <div class="form-group">
+                    <label for="start-y">Start Y:</label>
+                    <input type="number" id="start-y" value="0" step="0.1" oninput="updatePreview()">
+                </div>
+                <div class="form-group">
+                    <label for="dodic">DODIC:</label>
+                    <select id="dodic" onchange="updatePreview()">
+                        <option value="KD10">KD10</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="unique-id">Unique ID:</label>
+                    <input type="text" id="unique-id" placeholder="Enter unique identifier">
+                </div>
+                <div class="form-group">
+                    <label for="amount">Amount:</label>
+                    <input type="number" id="amount" value="1" min="1" oninput="updatePreview()">
+                </div>
+                <div class="form-group">
+                    <label>Rotation:</label>
+                    <span id="rotation-status">OFF</span>
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <button onclick="showPackagePreview()">Show Preview</button>
+                <button onclick="placePackage()">Place Ammunition</button>
+                <button onclick="showRemoveDialog()">Remove Package</button>
+                <button onclick="toggleRotation()">Toggle Rotation</button>
+                <button onclick="showCreateShelfDialog()">Create Shelf</button>
+                <button onclick="show3DView()">Show 3D View</button>
+            </div>
+
+            <div class="navigation-help">
+                <strong>Navigation:</strong> Click on canvas for keyboard focus. Use arrow keys to move preview (Shift for fine adjustment). Spacebar to toggle focus modes.
+            </div>
+        </div>
+
+        <!-- Canvas Container -->
+        <div id="canvas-container" class="hidden">
+            <canvas id="grid-canvas" width="800" height="600"></canvas>
+            <div class="controls">
+                <button onclick="focusCanvas()">Enable Keyboard Navigation</button>
+                <button onclick="focusInput()">Return to Typing</button>
+                <span id="focus-status">TYPING MODE</span>
+            </div>
+        </div>
+
+        <!-- 3D View Container -->
+        <div id="three-container">
+            <div class="view-controls">
+                <button onclick="changeView('top')">Top View</button>
+                <button onclick="changeView('front')">Front View</button>
+                <button onclick="changeView('side')">Side View</button>
+                <button onclick="changeView('default')">Default View</button>
+                <button onclick="toggleStorageBuilding()">Toggle Storage Building</button>
+                <button onclick="returnTo2D()">Return to 2D View</button>
+            </div>
+        </div>
+
+        <!-- Status Display -->
+        <div id="status-display"></div>
+
+        <!-- Information Section -->
+        <div class="info-section">
+            <h4>Ammunition Reference</h4>
+            <div id="ammo-info">
+                <p><strong>Available Ammunition Types:</strong></p>
+                <p>DODIC: KD10 - Box: 30x30x20 - Pallet: 90x90x14</p>
+                <p>Ammo per box: 1 - Ammo per pallet: 27</p>
+                <br>
+                <p><strong>Available Shelf Types:</strong></p>
+                <p>Type: SHELF01 - Dimensions: 120x80x200</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Remove Package -->
+    <div id="remove-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Remove Package</h3>
+                <span class="close" onclick="closeModal('remove-modal')">&times;</span>
+            </div>
+            <div>
+                <label for="remove-select">Select package to remove:</label>
+                <select id="remove-select" style="width: 100%; margin: 10px 0;"></select>
+                <div class="button-group">
+                    <button onclick="removeSelectedPackage()">Remove</button>
+                    <button onclick="closeModal('remove-modal')">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Create Shelf -->
+    <div id="shelf-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create Shelf</h3>
+                <span class="close" onclick="closeModal('shelf-modal')">&times;</span>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="shelf-id">Shelf ID:</label>
+                    <input type="text" id="shelf-id" placeholder="Enter shelf ID">
+                </div>
+                <div class="form-group">
+                    <label for="shelf-type">Shelf Type:</label>
+                    <select id="shelf-type">
+                        <option value="SHELF01">SHELF01</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="shelf-x">Position X:</label>
+                    <input type="number" id="shelf-x" value="0" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="shelf-y">Position Y:</label>
+                    <input type="number" id="shelf-y" value="0" step="0.1">
+                </div>
+            </div>
+            <div>
+                <h4>Packages in Shelf</h4>
+                <div id="shelf-packages"></div>
+                <button onclick="addShelfPackageRow()">+ Add Package</button>
+            </div>
+            <div class="button-group" style="margin-top: 20px;">
+                <button onclick="createShelf()">Create Shelf</button>
+                <button onclick="closeModal('shelf-modal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Package Details -->
+    <div id="details-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="details-title">Package Details</h3>
+                <span class="close" onclick="closeModal('details-modal')">&times;</span>
+            </div>
+            <div id="details-content"></div>
+        </div>
+    </div>
+
+<script>
+// Global variables
+let grid = null;
+let gridWidth = 0;
+let gridHeight = 0;
+let placedPackages = [];
+let shelves = [];
+let shelfContents = [];
+let canvas = null;
+let ctx = null;
+let currentView = "2D";
+let rotationEnabled = false;
+let previewPackage = null;
+let previewVisible = false;
+let selectedPackageId = null;
+let storageVisible = false;
+let scene, camera, renderer, controls;
+let updateTimer = null;
+
+// Ammunition database
+const ammoDb = {
+    'KD10': {
+        ammoPerBox: 1,
+        boxX: 30, boxY: 30, boxZ: 20,
+        ammoPerPallet: 27,
+        paletteX: 90, paletteY: 90, paletteZ: 14
+    },
+    'SHELF01': {
+        ammoPerBox: 0,
+        boxX: 0, boxY: 0, boxZ: 0,
+        ammoPerPallet: 0,
+        paletteX: 120, paletteY: 80, paletteZ: 200
+    }
+};
+
+// Utility functions
+function showStatus(message, type = 'success') {
+    const statusDiv = document.getElementById('status-display');
+    statusDiv.className = `status ${type}`;
+    statusDiv.textContent = message;
+    statusDiv.style.display = 'block';
+    setTimeout(() => {
+        statusDiv.style.display = 'none';
+    }, 3000);
+}
+
+function calculateBoxesPerLevel(paletteX, paletteY, boxX, boxY) {
+    const boxesPerRow = Math.floor(paletteX / boxX);
+    const boxesPerCol = Math.floor(paletteY / boxY);
+    return boxesPerRow * boxesPerCol;
+}
+
+// Grid creation
+function createGrid() {
+    gridWidth = parseFloat(document.getElementById('grid-width').value);
+    gridHeight = parseFloat(document.getElementById('grid-height').value);
+    
+    if (gridWidth <= 0 || gridHeight <= 0) {
+        showStatus('Grid dimensions must be positive numbers.', 'error');
+        return;
+    }
+    
+    // Initialize grid array
+    grid = Array(Math.ceil(gridHeight)).fill(null).map(() => Array(Math.ceil(gridWidth)).fill(0));
+    
+    // Show package section and canvas
+    document.getElementById('package-section').classList.remove('hidden');
+    document.getElementById('canvas-container').classList.remove('hidden');
+    
+    // Setup canvas
+    canvas = document.getElementById('grid-canvas');
+    ctx = canvas.getContext('2d');
+    
+    // Add event listeners
+    canvas.addEventListener('click', handleCanvasClick);
+    canvas.addEventListener('keydown', handleKeyDown);
+    canvas.tabIndex = 0; // Make canvas focusable
+    
+    // Update grid if packages were loaded
+    updateGridFromPackages();
+    
+    drawGrid();
+    showStatus('Grid created successfully!');
+}
+
+function updateGridFromPackages() {
+    // Clear grid
+    grid = Array(Math.ceil(gridHeight)).fill(null).map(() => Array(Math.ceil(gridWidth)).fill(0));
+    
+    // Mark occupied cells from packages
+    placedPackages.forEach(pkg => {
+        const xStart = Math.floor(pkg.x);
+        const yStart = Math.floor(pkg.y);
+        const xEnd = Math.ceil(pkg.x + pkg.totalX);
+        const yEnd = Math.ceil(pkg.y + pkg.totalY);
+        
+        for (let y = yStart; y < yEnd && y < grid.length; y++) {
+            for (let x = xStart; x < xEnd && x < grid[0].length; x++) {
+                if (y >= 0 && x >= 0) {
+                    grid[y][x] = 1;
+                }
+            }
+        }
+    });
+    
+    // Mark occupied cells from shelves
+    shelves.forEach(shelf => {
+        const xStart = Math.floor(shelf.x);
+        const yStart = Math.floor(shelf.y);
+        const xEnd = Math.ceil(shelf.x + shelf.totalX);
+        const yEnd = Math.ceil(shelf.y + shelf.totalY);
+        
+        for (let y = yStart; y < yEnd && y < grid.length; y++) {
+            for (let x = xStart; x < xEnd && x < grid[0].length; x++) {
+                if (y >= 0 && x >= 0) {
+                    grid[y][x] = 1;
+                }
+            }
+        }
+    });
+}
+
+// Drawing functions
+function drawGrid() {
+    if (!canvas || !ctx) return;
+    
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+    
+    // Calculate cell size maintaining aspect ratio
+    const cellSize = Math.min(canvasWidth / gridWidth, canvasHeight / gridHeight);
+    
+    // Calculate grid size on canvas
+    const gridWidthPx = cellSize * gridWidth;
+    const gridHeightPx = cellSize * gridHeight;
+    
+    // Calculate offsets to center grid
+    const xOffset = (canvasWidth - gridWidthPx) / 2;
+    const yOffset = (canvasHeight - gridHeightPx) / 2;
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+    
+    // Draw grid background
+    ctx.fillStyle = '#f8f9fa';
+    ctx.fillRect(xOffset, yOffset, gridWidthPx, gridHeightPx);
+    
+    // Draw grid lines
+    ctx.strokeStyle = '#dee2e6';
+    ctx.lineWidth = 1;
+    
+    // Vertical lines
+    for (let i = 0; i <= gridWidth; i++) {
+        const x = xOffset + (i * cellSize);
+        ctx.beginPath();
+        ctx.moveTo(x, yOffset);
+        ctx.lineTo(x, yOffset + gridHeightPx);
+        ctx.stroke();
+    }
+    
+    // Horizontal lines
+    for (let j = 0; j <= gridHeight; j++) {
+        const y = yOffset + (j * cellSize);
+        ctx.beginPath();
+        ctx.moveTo(xOffset, y);
+        ctx.lineTo(xOffset + gridWidthPx, y);
+        ctx.stroke();
+    }
+    
+    // Draw packages
+    placedPackages.forEach(pkg => {
+        const isSelected = pkg.uniqueId === selectedPackageId;
+        const fillColor = isSelected ? '#28a745' : '#007bff';
+        const strokeColor = isSelected ? '#1e7e34' : '#0056b3';
+        
+        ctx.fillStyle = fillColor + '80'; // Add transparency
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = isSelected ? 3 : 2;
+        
+        const x = xOffset + (pkg.x * cellSize);
+        const y = yOffset + (pkg.y * cellSize);
+        const width = pkg.totalX * cellSize;
+        const height = pkg.totalY * cellSize;
+        
+        ctx.fillRect(x, y, width, height);
+        ctx.strokeRect(x, y, width, height);
+        
+        // Draw label
+        ctx.fillStyle = '#000';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(
+            `${pkg.uniqueId}\n(${pkg.numPalettes} palettes)`,
+            x + width/2,
+            y + height/2
+        );
+    });
+    
+    // Draw shelves
+    shelves.forEach(shelf => {
+        const isSelected = shelf.uniqueId === selectedPackageId;
+        const fillColor = isSelected ? '#dc3545' : '#fd7e14';
+        const strokeColor = isSelected ? '#bd2130' : '#e8590c';
+        
+        ctx.fillStyle = fillColor + '80';
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = isSelected ? 3 : 2;
+        
+        const x = xOffset + (shelf.x * cellSize);
+        const y = yOffset + (shelf.y * cellSize);
+        const width = shelf.totalX * cellSize;
+        const height = shelf.totalY * cellSize;
+        
+        ctx.fillRect(x, y, width, height);
+        ctx.strokeRect(x, y, width, height);
+        
+        // Draw label
+        ctx.fillStyle = '#000';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(
+            `${shelf.uniqueId}\n(Shelf with ${shelf.capacity} packages)`,
+            x + width/2,
+            y + height/2
+        );
+    });
+    
+    // Draw preview if visible
+    if (previewVisible && previewPackage) {
+        drawPreview();
+    }
+}
+
+function drawPreview() {
+    if (!previewPackage || !canvas || !ctx) return;
+    
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+    const cellSize = Math.min(canvasWidth / gridWidth, canvasHeight / gridHeight);
+    const gridWidthPx = cellSize * gridWidth;
+    const gridHeightPx = cellSize * gridHeight;
+    const xOffset = (canvasWidth - gridWidthPx) / 2;
+    const yOffset = (canvasHeight - gridHeightPx) / 2;
+    
+    const x = previewPackage.x;
+    const y = previewPackage.y;
+    const totalX = previewPackage.totalX;
+    const totalY = previewPackage.totalY;
+    
+    // Check if preview is out of bounds or overlapping
+    const outOfBounds = (x < 0 || y < 0 || (x + totalX) > gridWidth || (y + totalY) > gridHeight);
+    const occupied = checkSpaceOccupied(x, y, totalX, totalY);
+    
+    // Choose color based on validity
+    let fillColor, strokeColor;
+    if (outOfBounds) {
+        fillColor = '#dc3545';
+        strokeColor = '#c82333';
+    } else if (occupied) {
+        fillColor = '#fd7e14';
+        strokeColor = '#e8590c';
+    } else {
+        fillColor = '#28a745';
+        strokeColor = '#1e7e34';
+    }
+    
+    // Draw preview rectangle
+    ctx.fillStyle = fillColor + '60';
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    
+    const rectX = xOffset + (x * cellSize);
+    const rectY = yOffset + (y * cellSize);
+    const rectWidth = totalX * cellSize;
+    const rectHeight = totalY * cellSize;
+    
+    ctx.fillRect(rectX, rectY, rectWidth, rectHeight);
+    ctx.strokeRect(rectX, rectY, rectWidth, rectHeight);
+    
+    // Reset line dash
+    ctx.setLineDash([]);
+    
+    // Draw label
+    ctx.fillStyle = '#000';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(
+        `PREVIEW\n(${previewPackage.numPalettes} palettes)`,
+        rectX + rectWidth/2,
+        rectY + rectHeight/2
+    );
+    
+    // Draw alignment lines
+    drawAlignmentLines(x, y, totalX, totalY);
+}
+
+function drawAlignmentLines(x, y, width, height) {
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+    const cellSize = Math.min(canvasWidth / gridWidth, canvasHeight / gridHeight);
+    const gridWidthPx = cellSize * gridWidth;
+    const gridHeightPx = cellSize * gridHeight;
+    const xOffset = (canvasWidth - gridWidthPx) / 2;
+    const yOffset = (canvasHeight - gridHeightPx) / 2;
+    
+    const threshold = 0.05;
+    const leftEdge = x;
+    const rightEdge = x + width;
+    const topEdge = y;
+    const bottomEdge = y + height;
+    const centerX = x + width/2;
+    const centerY = y + height/2;
+    
+    ctx.strokeStyle = '#dc3545';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    
+    // Check alignment with placed packages
+    [...placedPackages, ...shelves].forEach(item => {
+        const itemLeft = item.x;
+        const itemRight = item.x + item.totalX;
+        const itemTop = item.y;
+        const itemBottom = item.y + item.totalY;
+        const itemCenterX = item.x + item.totalX/2;
+        const itemCenterY = item.y + item.totalY/2;
+        
+        // Vertical alignments
+        if (Math.abs(leftEdge - itemLeft) < threshold) {
+            const lineX = xOffset + (leftEdge * cellSize);
+            ctx.beginPath();
+            ctx.moveTo(lineX, yOffset);
+            ctx.lineTo(lineX, yOffset + gridHeightPx);
+            ctx.stroke();
+        }
+        
+        if (Math.abs(rightEdge - itemRight) < threshold) {
+            const lineX = xOffset + (rightEdge * cellSize);
+            ctx.beginPath();
+            ctx.moveTo(lineX, yOffset);
+            ctx.lineTo(lineX, yOffset + gridHeightPx);
+            ctx.stroke();
+        }
+        
+        if (Math.abs(centerX - itemCenterX) < threshold) {
+            const lineX = xOffset + (centerX * cellSize);
+            ctx.beginPath();
+            ctx.moveTo(lineX, yOffset);
+            ctx.lineTo(lineX, yOffset + gridHeightPx);
+            ctx.stroke();
+        }
+        
+        // Horizontal alignments
+        if (Math.abs(topEdge - itemTop) < threshold) {
+            const lineY = yOffset + (topEdge * cellSize);
+            ctx.beginPath();
+            ctx.moveTo(xOffset, lineY);
+            ctx.lineTo(xOffset + gridWidthPx, lineY);
+            ctx.stroke();
+        }
+        
+        if (Math.abs(bottomEdge - itemBottom) < threshold) {
+            const lineY = yOffset + (bottomEdge * cellSize);
+            ctx.beginPath();
+            ctx.moveTo(xOffset, lineY);
+            ctx.lineTo(xOffset + gridWidthPx, lineY);
+            ctx.stroke();
+        }
+        
+        if (Math.abs(centerY - itemCenterY) < threshold) {
+            const lineY = yOffset + (centerY * cellSize);
+            ctx.beginPath();
+            ctx.moveTo(xOffset, lineY);
+            ctx.lineTo(xOffset + gridWidthPx, lineY);
+            ctx.stroke();
+        }
+    });
+    
+    ctx.setLineDash([]);
+}
+
+function checkSpaceOccupied(x, y, width, height) {
+    const xStart = Math.floor(x);
+    const yStart = Math.floor(y);
+    const xEnd = Math.ceil(x + width);
+    const yEnd = Math.ceil(y + height);
+    
+    for (let checkY = yStart; checkY < yEnd; checkY++) {
+        for (let checkX = xStart; checkX < xEnd; checkX++) {
+            if (checkY >= 0 && checkX >= 0 && 
+                checkY < grid.length && checkX < grid[0].length && 
+                grid[checkY][checkX] !== 0) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// Preview system
+function updatePreview() {
+    if (updateTimer) {
+        clearTimeout(updateTimer);
+    }
+    updateTimer = setTimeout(showPackagePreview, 100);
+}
+
+function showPackagePreview() {
+    previewVisible = false;
+    
+    try {
+        const startX = parseFloat(document.getElementById('start-x').value) || 0;
+        const startY = parseFloat(document.getElementById('start-y').value) || 0;
+        const dodic = document.getElementById('dodic').value;
+        const amount = parseInt(document.getElementById('amount').value) || 0;
+        
+        if (!dodic || amount <= 0) {
+            drawGrid();
+            return;
+        }
+        
+        const ammoInfo = ammoDb[dodic];
+        if (!ammoInfo) {
+            drawGrid();
+            return;
+        }
+        
+        let {boxX, boxY, boxZ, ammoPerBox, ammoPerPallet, paletteX, paletteY} = ammoInfo;
+        
+        // Apply rotation if enabled
+        if (rotationEnabled) {
+            [paletteX, paletteY] = [paletteY, paletteX];
+            [boxX, boxY] = [boxY, boxX];
+        }
+        
+        const numBoxes = Math.ceil(amount / ammoPerBox);
+        const numPalettes = Math.ceil(numBoxes / ammoPerPallet);
+        
+        previewPackage = {
+            x: startX,
+            y: startY,
+            totalX: paletteX,
+            totalY: paletteY,
+            numPalettes: numPalettes
+        };
+        
+        previewVisible = true;
+        drawGrid();
+        
+    } catch (error) {
+        drawGrid();
+    }
+}
+
+// Package placement
+function placePackage() {
+    try {
+        const startX = parseFloat(document.getElementById('start-x').value);
+        const startY = parseFloat(document.getElementById('start-y').value);
+        const dodic = document.getElementById('dodic').value;
+        const uniqueId = document.getElementById('unique-id').value.trim();
+        const amount = parseInt(document.getElementById('amount').value);
+        
+        // Validation
+        if (startX < 0 || startY < 0 || startX >= gridWidth || startY >= gridHeight) {
+            showStatus('Starting position is outside the grid.', 'error');
+            return;
+        }
+        
+        if (!uniqueId) {
+            showStatus('Please enter a unique ID for the package.', 'error');
+            return;
+        }
+        
+        if (placedPackages.some(pkg => pkg.uniqueId === uniqueId) || 
+            shelves.some(shelf => shelf.uniqueId === uniqueId)) {
+            showStatus('This unique ID already exists. Please choose another.', 'error');
+            return;
+        }
+        
+        if (amount <= 0) {
+            showStatus('Number of ammunition must be positive.', 'error');
+            return;
+        }
+        
+        const ammoInfo = ammoDb[dodic];
+        if (!ammoInfo) {
+            showStatus('DODIC not found in database.', 'error');
+            return;
+        }
+        
+        let {boxX, boxY, boxZ, ammoPerBox, ammoPerPallet, paletteX, paletteY, paletteZ} = ammoInfo;
+        
+        // Apply rotation if enabled
+        if (rotationEnabled) {
+            [paletteX, paletteY] = [paletteY, paletteX];
+            [boxX, boxY] = [boxY, boxX];
+        }
+        
+        const numBoxes = Math.ceil(amount / ammoPerBox);
+        const numPalettes = Math.ceil(numBoxes / ammoPerPallet);
+        const boxesPerLevel = calculateBoxesPerLevel(paletteX, paletteY, boxX, boxY);
+        
+        // Check if package fits
+        if (startX + paletteX > gridWidth || startY + paletteY > gridHeight) {
+            showStatus('The required palettes do not fit in the grid.', 'error');
+            return;
+        }
+        
+        // Check if space is occupied
+        if (checkSpaceOccupied(startX, startY, paletteX, paletteY)) {
+            showStatus('Some grid cells are already occupied.', 'error');
+            return;
+        }
+        
+        // Create package object
+        const newPackage = {
+            uniqueId: uniqueId,
+            dodic: dodic,
+            amount: amount,
+            numBoxes: numBoxes,
+            numPalettes: numPalettes,
+            x: startX,
+            y: startY,
+            totalX: paletteX,
+            totalY: paletteY,
+            boxesPerLevel: boxesPerLevel,
+            boxX: boxX,
+            boxY: boxY,
+            boxZ: boxZ,
+            paletteZ: paletteZ
+        };
+        
+        placedPackages.push(newPackage);
+        
+        // Update grid
+        const xStart = Math.floor(startX);
+        const yStart = Math.floor(startY);
+        const xEnd = Math.ceil(startX + paletteX);
+        const yEnd = Math.ceil(startY + paletteY);
+        
+        for (let y = yStart; y < yEnd && y < grid.length; y++) {
+            for (let x = xStart; x < xEnd && x < grid[0].length; x++) {
+                if (y >= 0 && x >= 0) {
+                    grid[y][x] = 1;
+                }
+            }
+        }
+        
+        // Clear inputs and redraw
+        document.getElementById('start-x').value = '';
+        document.getElementById('start-y').value = '';
+        document.getElementById('unique-id').value = '';
+        document.getElementById('amount').value = '1';
+        
+        previewVisible = false;
+        drawGrid();
+        
+        showStatus(`Package '${uniqueId}' placed successfully!`);
+        
+    } catch (error) {
+        showStatus('Please ensure all entries contain valid values.', 'error');
+    }
+}
+
+// Rotation toggle
+function toggleRotation() {
+    rotationEnabled = !rotationEnabled;
+    const statusSpan = document.getElementById('rotation-status');
+    statusSpan.textContent = rotationEnabled ? 'ON' : 'OFF';
+    statusSpan.style.color = rotationEnabled ? '#28a745' : '#e74c3c';
+    
+    if (previewVisible) {
+        showPackagePreview();
+    }
+}
+
+// Event handlers
+function handleCanvasClick(event) {
+    const rect = canvas.getBoundingClientRect();
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+    const cellSize = Math.min(canvasWidth / gridWidth, canvasHeight / gridHeight);
+    
+    const gridWidthPx = cellSize * gridWidth;
+    const gridHeightPx = cellSize * gridHeight;
+    const xOffset = (canvasWidth - gridWidthPx) / 2;
+    const yOffset = (canvasHeight - gridHeightPx) / 2;
+    
+    const clickX = event.clientX - rect.left;
+    const clickY = event.clientY - rect.top;
+    
+    const gridX = (clickX - xOffset) / cellSize;
+    const gridY = (clickY - yOffset) / cellSize;
+    
+    // Check for shelf clicks first
+    for (const shelf of shelves) {
+        if (gridX >= shelf.x && gridX <= shelf.x + shelf.totalX &&
+            gridY >= shelf.y && gridY <= shelf.y + shelf.totalY) {
+            if (selectedPackageId === shelf.uniqueId) {
+                selectedPackageId = null;
+            } else {
+                selectedPackageId = shelf.uniqueId;
+                showShelfDetails(shelf.uniqueId);
+            }
+            drawGrid();
+            return;
+        }
+    }
+    
+    // Check for package clicks
+    for (const pkg of placedPackages) {
+        if (gridX >= pkg.x && gridX <= pkg.x + pkg.totalX &&
+            gridY >= pkg.y && gridY <= pkg.y + pkg.totalY) {
+            if (selectedPackageId === pkg.uniqueId) {
+                selectedPackageId = null;
+            } else {
+                selectedPackageId = pkg.uniqueId;
+                showPackageDetails(pkg.uniqueId);
+            }
+            drawGrid();
+            return;
+        }
+    }
+    
+    // Clear selection if clicking empty space
+    if (selectedPackageId) {
+        selectedPackageId = null;
+        drawGrid();
+    }
+}
+
+function handleKeyDown(event) {
+    if (!canvas.matches(':focus')) return;
+    
+    const stepSize = event.shiftKey ? 0.1 : 1.0;
+    const startXInput = document.getElementById('start-x');
+    const startYInput = document.getElementById('start-y');
+    
+    let currentX = parseFloat(startXInput.value) || 0;
+    let currentY = parseFloat(startYInput.value) || 0;
+    
+    switch (event.key) {
+        case 'ArrowLeft':
+            currentX = Math.max(0, currentX - stepSize);
+            startXInput.value = currentX.toFixed(1);
+            break;
+        case 'ArrowRight':
+            currentX = currentX + stepSize;
+            startXInput.value = currentX.toFixed(1);
+            break;
+        case 'ArrowUp':
+            currentY = Math.max(0, currentY - stepSize);
+            startYInput.value = currentY.toFixed(1);
+            break;
+        case 'ArrowDown':
+            currentY = currentY + stepSize;
+            startYInput.value = currentY.toFixed(1);
+            break;
+        case ' ':
+            toggleFocus();
+            event.preventDefault();
+            break;
+        default:
+            return;
+    }
+    
+    showPackagePreview();
+    event.preventDefault();
+}
+
+function focusCanvas() {
+    canvas.focus();
+    document.getElementById('focus-status').textContent = 'KEYBOARD NAVIGATION ACTIVE';
+    document.getElementById('focus-status').style.color = '#007bff';
+}
+
+function focusInput() {
+    document.getElementById('start-x').focus();
+    document.getElementById('focus-status').textContent = 'TYPING MODE';
+    document.getElementById('focus-status').style.color = '#000';
+}
+
+function toggleFocus() {
+    if (canvas.matches(':focus')) {
+        focusInput();
+    } else {
+        focusCanvas();
+    }
+}
+
+// Package details
+function showPackageDetails(uniqueId) {
+    const pkg = placedPackages.find(p => p.uniqueId === uniqueId);
+    if (!pkg) return;
+    
+    const modal = document.getElementById('details-modal');
+    const title = document.getElementById('details-title');
+    const content = document.getElementById('details-content');
+    
+    title.textContent = `Package Details: ${uniqueId}`;
+    
+    content.innerHTML = `
+        <div class="package-details">
+            <p><strong>Package ID:</strong> ${pkg.uniqueId}</p>
+            <p><strong>DODIC:</strong> ${pkg.dodic}</p>
+            <p><strong>Amount:</strong> ${pkg.amount}</p>
+            <p><strong>Number of Boxes:</strong> ${pkg.numBoxes}</p>
+            <p><strong>Number of Palettes:</strong> ${pkg.numPalettes}</p>
+            <p><strong>Position:</strong> (${pkg.x}, ${pkg.y})</p>
+            <p><strong>Dimensions:</strong> ${pkg.totalX} x ${pkg.totalY}</p>
+            <p><strong>Box Dimensions:</strong> ${pkg.boxX} x ${pkg.boxY} x ${pkg.boxZ}</p>
+            <p><strong>Boxes per Level:</strong> ${pkg.boxesPerLevel}</p>
+            <div class="button-group" style="margin-top: 15px;">
+                <button onclick="removePackage('${uniqueId}'); closeModal('details-modal');" class="remove-btn">Remove Package</button>
+                <button onclick="closeModal('details-modal')">Close</button>
+            </div>
+        </div>
+    `;
+    
+    modal.style.display = 'block';
+}
+
+function showShelfDetails(uniqueId) {
+    const shelf = shelves.find(s => s.uniqueId === uniqueId);
+    if (!shelf) return;
+    
+    const packages = shelfContents.filter(p => p.shelfId === uniqueId);
+    
+    const modal = document.getElementById('details-modal');
+    const title = document.getElementById('details-title');
+    const content = document.getElementById('details-content');
+    
+    title.textContent = `Shelf Details: ${uniqueId}`;
+    
+    let packagesHtml = '';
+    packages.forEach(pkg => {
+        packagesHtml += `
+            <tr>
+                <td>${pkg.packageId}</td>
+                <td>${pkg.dodic}</td>
+                <td>${pkg.amount}</td>
+                <td>${pkg.numBoxes}</td>
+                <td>${pkg.position}</td>
+            </tr>
+        `;
+    });
+    
+    content.innerHTML = `
+        <div class="package-details">
+            <h4>Shelf Information</h4>
+            <p><strong>Shelf ID:</strong> ${shelf.uniqueId}</p>
+            <p><strong>Shelf Type:</strong> ${shelf.shelfType}</p>
+            <p><strong>Position:</strong> (${shelf.x}, ${shelf.y})</p>
+            <p><strong>Dimensions:</strong> ${shelf.totalX} x ${shelf.totalY} x ${shelf.shelfHeight}</p>
+            <p><strong>Capacity:</strong> ${shelf.capacity} packages</p>
+            
+            <h4>Packages in Shelf (${packages.length} items)</h4>
+            <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
+                <tr style="background: #f8f9fa;">
+                    <th style="border: 1px solid #ddd; padding: 8px;">Package ID</th>
+                    <th style="border: 1px solid #ddd; padding: 8px;">DODIC</th>
+                    <th style="border: 1px solid #ddd; padding: 8px;">Amount</th>
+                    <th style="border: 1px solid #ddd; padding: 8px;">Boxes</th>
+                    <th style="border: 1px solid #ddd; padding: 8px;">Position</th>
+                </tr>
+                ${packagesHtml}
+            </table>
+            
+            <div class="button-group" style="margin-top: 15px;">
+                <button onclick="removeShelf('${uniqueId}'); closeModal('details-modal');" class="remove-btn">Remove Shelf</button>
+                <button onclick="closeModal('details-modal')">Close</button>
+            </div>
+        </div>
+    `;
+    
+    modal.style.display = 'block';
+}
+
+// Remove functionality
+function showRemoveDialog() {
+    if (placedPackages.length === 0 && shelves.length === 0) {
+        showStatus('There are no packages or shelves to remove.', 'warning');
+        return;
+    }
+    
+    const modal = document.getElementById('remove-modal');
+    const select = document.getElementById('remove-select');
+    
+    select.innerHTML = '';
+    
+    placedPackages.forEach(pkg => {
+        const option = document.createElement('option');
+        option.value = `package:${pkg.uniqueId}`;
+        option.textContent = `Package: ${pkg.uniqueId}`;
+        select.appendChild(option);
+    });
+    
+    shelves.forEach(shelf => {
+        const option = document.createElement('option');
+        option.value = `shelf:${shelf.uniqueId}`;
+        option.textContent = `Shelf: ${shelf.uniqueId}`;
+        select.appendChild(option);
+    });
+    
+    modal.style.display = 'block';
+}
+
+function removeSelectedPackage() {
+    const select = document.getElementById('remove-select');
+    const selectedValue = select.value;
+    
+    if (!selectedValue) {
+        showStatus('Please select a package or shelf to remove.', 'warning');
+        return;
+    }
+    
+    const [type, uniqueId] = selectedValue.split(':');
+    
+    if (type === 'package') {
+        removePackage(uniqueId);
+    } else if (type === 'shelf') {
+        removeShelf(uniqueId);
+    }
+    
+    closeModal('remove-modal');
+}
+
+function removePackage(uniqueId) {
+    const pkgIndex = placedPackages.findIndex(pkg => pkg.uniqueId === uniqueId);
+    if (pkgIndex === -1) return;
+    
+    const pkg = placedPackages[pkgIndex];
+    
+    // Clear grid cells
+    const xStart = Math.floor(pkg.x);
+    const yStart = Math.floor(pkg.y);
+    const xEnd = Math.ceil(pkg.x + pkg.totalX);
+    const yEnd = Math.ceil(pkg.y + pkg.totalY);
+    
+    for (let y = yStart; y < yEnd && y < grid.length; y++) {
+        for (let x = xStart; x < xEnd && x < grid[0].length; x++) {
+            if (y >= 0 && x >= 0) {
+                grid[y][x] = 0;
+            }
+        }
+    }
+    
+    // Remove from array
+    placedPackages.splice(pkgIndex, 1);
+    
+    // Clear selection if this was selected
+    if (selectedPackageId === uniqueId) {
+        selectedPackageId = null;
+    }
+    
+    drawGrid();
+    showStatus(`Package '${uniqueId}' removed successfully!`);
+}
+
+function removeShelf(uniqueId) {
+    const shelfIndex = shelves.findIndex(shelf => shelf.uniqueId === uniqueId);
+    if (shelfIndex === -1) return;
+    
+    const shelf = shelves[shelfIndex];
+    
+    // Clear grid cells
+    const xStart = Math.floor(shelf.x);
+    const yStart = Math.floor(shelf.y);
+    const xEnd = Math.ceil(shelf.x + shelf.totalX);
+    const yEnd = Math.ceil(shelf.y + shelf.totalY);
+    
+    for (let y = yStart; y < yEnd && y < grid.length; y++) {
+        for (let x = xStart; x < xEnd && x < grid[0].length; x++) {
+            if (y >= 0 && x >= 0) {
+                grid[y][x] = 0;
+            }
+        }
+    }
+    
+    // Remove shelf and its contents
+    shelves.splice(shelfIndex, 1);
+    shelfContents = shelfContents.filter(pkg => pkg.shelfId !== uniqueId);
+    
+    // Clear selection if this was selected
+    if (selectedPackageId === uniqueId) {
+        selectedPackageId = null;
+    }
+    
+    drawGrid();
+    showStatus(`Shelf '${uniqueId}' removed successfully!`);
+}
+
+// Shelf creation
+function showCreateShelfDialog() {
+    const modal = document.getElementById('shelf-modal');
+    
+    // Clear previous content
+    document.getElementById('shelf-id').value = '';
+    document.getElementById('shelf-x').value = '0';
+    document.getElementById('shelf-y').value = '0';
+    
+    // Reset packages section
+    const packagesDiv = document.getElementById('shelf-packages');
+    packagesDiv.innerHTML = '';
+    addShelfPackageRow();
+    
+    modal.style.display = 'block';
+}
+
+function addShelfPackageRow() {
+    const packagesDiv = document.getElementById('shelf-packages');
+    const rowIndex = packagesDiv.children.length;
+    
+    const rowDiv = document.createElement('div');
+    rowDiv.className = 'package-row';
+    rowDiv.innerHTML = `
+        <label>Package ${rowIndex + 1}:</label>
+        <select class="package-dodic">
+            <option value="KD10">KD10</option>
+        </select>
+        <input type="number" class="package-amount" placeholder="Amount" min="1" value="1">
+        <input type="number" class="package-position" placeholder="Position" min="1" value="${rowIndex + 1}">
+        <input type="text" class="package-id" placeholder="Package ID">
+        <button type="button" class="remove-btn" onclick="removeShelfPackageRow(this)">✕</button>
+    `;
+    
+    packagesDiv.appendChild(rowDiv);
+}
+
+function removeShelfPackageRow(button) {
+    const row = button.parentElement;
+    row.remove();
+    
+    // Renumber remaining rows
+    const packagesDiv = document.getElementById('shelf-packages');
+    Array.from(packagesDiv.children).forEach((row, index) => {
+        const label = row.querySelector('label');
+        label.textContent = `Package ${index + 1}:`;
+    });
+}
+
+function createShelf() {
+    try {
+        const shelfId = document.getElementById('shelf-id').value.trim();
+        const shelfType = document.getElementById('shelf-type').value;
+        const shelfX = parseFloat(document.getElementById('shelf-x').value);
+        const shelfY = parseFloat(document.getElementById('shelf-y').value);
+        
+        // Validate shelf info
+        if (!shelfId) {
+            showStatus('Please enter a unique Shelf ID.', 'error');
+            return;
+        }
+        
+        if (placedPackages.some(pkg => pkg.uniqueId === shelfId) || 
+            shelves.some(shelf => shelf.uniqueId === shelfId)) {
+            showStatus('This Shelf ID already exists. Please choose another.', 'error');
+            return;
+        }
+        
+        if (shelfX < 0 || shelfY < 0) {
+            showStatus('Shelf position must be positive.', 'error');
+            return;
+        }
+        
+        const shelfInfo = ammoDb[shelfType];
+        if (!shelfInfo) {
+            showStatus('Shelf type not found in database.', 'error');
+            return;
+        }
+        
+        const shelfWidth = shelfInfo.paletteX;
+        const shelfDepth = shelfInfo.paletteY;
+        const shelfHeight = shelfInfo.paletteZ;
+        
+        // Check if shelf fits
+        if (shelfX + shelfWidth > gridWidth || shelfY + shelfDepth > gridHeight) {
+            showStatus('The shelf does not fit in the grid.', 'error');
+            return;
+        }
+        
+        // Check if space is occupied
+        if (checkSpaceOccupied(shelfX, shelfY, shelfWidth, shelfDepth)) {
+            showStatus('Some grid cells are already occupied.', 'error');
+            return;
+        }
+        
+        // Process package rows
+        const packagesDiv = document.getElementById('shelf-packages');
+        const packageRows = Array.from(packagesDiv.children);
+        const shelfPackages = [];
+        const usedIds = new Set();
+        const usedPositions = new Set();
+        
+        for (let i = 0; i < packageRows.length; i++) {
+            const row = packageRows[i];
+            const packageId = row.querySelector('.package-id').value.trim();
+            const dodic = row.querySelector('.package-dodic').value;
+            const amount = parseInt(row.querySelector('.package-amount').value);
+            const position = parseInt(row.querySelector('.package-position').value);
+            
+            // Skip empty rows
+            if (!packageId && !amount && !position) continue;
+            
+            // Validate
+            if (!packageId) {
+                showStatus(`Package ${i + 1}: Package ID is required.`, 'error');
+                return;
+            }
+            
+            if (usedIds.has(packageId)) {
+                showStatus(`Package ID '${packageId}' is used multiple times.`, 'error');
+                return;
+            }
+            usedIds.add(packageId);
+            
+            if (usedPositions.has(position)) {
+                showStatus(`Position ${position} is used multiple times.`, 'error');
+                return;
+            }
+            usedPositions.add(position);
+            
+            if (placedPackages.some(pkg => pkg.uniqueId === packageId)) {
+                showStatus(`Package ID '${packageId}' already exists elsewhere.`, 'error');
+                return;
+            }
+            
+            if (!amount || amount <= 0 || !position || position <= 0) {
+                showStatus(`Package ${i + 1} has invalid amount or position.`, 'error');
+                return;
+            }
+            
+            const ammoInfo = ammoDb[dodic];
+            if (!ammoInfo) {
+                showStatus(`DODIC '${dodic}' not found.`, 'error');
+                return;
+            }
+            
+            const numBoxes = Math.ceil(amount / ammoInfo.ammoPerBox);
+            
+            shelfPackages.push({
+                shelfId: shelfId,
+                packageId: packageId,
+                dodic: dodic,
+                amount: amount,
+                numBoxes: numBoxes,
+                position: position
+            });
+        }
+        
+        // Create shelf
+        const newShelf = {
+            uniqueId: shelfId,
+            x: shelfX,
+            y: shelfY,
+            totalX: shelfWidth,
+            totalY: shelfDepth,
+            shelfHeight: shelfHeight,
+            capacity: shelfPackages.length,
+            shelfType: shelfType
+        };
+        
+        shelves.push(newShelf);
+        
+        // Add packages to shelf contents
+        shelfPackages.forEach(pkg => {
+            shelfContents.push(pkg);
+        });
+        
+        // Update grid
+        const xStart = Math.floor(shelfX);
+        const yStart = Math.floor(shelfY);
+        const xEnd = Math.ceil(shelfX + shelfWidth);
+        const yEnd = Math.ceil(shelfY + shelfDepth);
+        
+        for (let y = yStart; y < yEnd && y < grid.length; y++) {
+            for (let x = xStart; x < xEnd && x < grid[0].length; x++) {
+                if (y >= 0 && x >= 0) {
+                    grid[y][x] = 1;
+                }
+            }
+        }
+        
+        closeModal('shelf-modal');
+        drawGrid();
+        showStatus(`Shelf '${shelfId}' with ${shelfPackages.length} packages has been created.`);
+        
+    } catch (error) {
+        showStatus('An error occurred while creating the shelf.', 'error');
+    }
+}
+
+// Modal management
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+}
+
+// 3D View functions
+function show3DView() {
+    if (placedPackages.length === 0 && shelves.length === 0) {
+        showStatus('There are no packages or shelves to display in 3D view.', 'warning');
+        return;
+    }
+    
+    currentView = "3D";
+    
+    // Hide 2D view
+    document.getElementById('canvas-container').classList.add('hidden');
+    
+    // Show 3D view
+    const threeContainer = document.getElementById('three-container');
+    threeContainer.style.display = 'block';
+    
+    // Clear existing 3D content
+    const existingCanvas = threeContainer.querySelector('canvas');
+    if (existingCanvas) {
+        existingCanvas.remove();
+    }
+    
+    init3D();
+    draw3DPackages();
+    
+    showStatus('3D view loaded successfully!');
+}
+
+function init3D() {
+    const container = document.getElementById('three-container');
+    const containerRect = container.getBoundingClientRect();
+    
+    // Create scene
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf0f0f0);
+    
+    // Create camera
+    const aspect = containerRect.width / containerRect.height;
+    camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 2000);
+    camera.position.set(gridWidth * 0.8, gridHeight * 0.8, Math.max(gridWidth, gridHeight) * 0.8);
+    camera.lookAt(gridWidth / 2, gridHeight / 2, 0);
+    
+    // Create renderer
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(containerRect.width, containerRect.height - 60); // Account for controls
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    
+    container.appendChild(renderer.domElement);
+    
+    // Add lights
+    const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+    scene.add(ambientLight);
+    
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(gridWidth, gridHeight, Math.max(gridWidth, gridHeight));
+    directionalLight.castShadow = true;
+    directionalLight.shadow.mapSize.width = 2048;
+    directionalLight.shadow.mapSize.height = 2048;
+    scene.add(directionalLight);
+    
+    // Add basic controls (mouse rotation)
+    let isMouseDown = false;
+    let mouseX = 0;
+    let mouseY = 0;
+    
+    renderer.domElement.addEventListener('mousedown', (event) => {
+        isMouseDown = true;
+        mouseX = event.clientX;
+        mouseY = event.clientY;
+    });
+    
+    renderer.domElement.addEventListener('mouseup', () => {
+        isMouseDown = false;
+    });
+    
+    renderer.domElement.addEventListener('mousemove', (event) => {
+        if (!isMouseDown) return;
+        
+        const deltaX = event.clientX - mouseX;
+        const deltaY = event.clientY - mouseY;
+        
+        // Rotate camera around the center
+        const spherical = new THREE.Spherical();
+        spherical.setFromVector3(camera.position.clone().sub(new THREE.Vector3(gridWidth/2, gridHeight/2, 0)));
+        spherical.theta -= deltaX * 0.01;
+        spherical.phi += deltaY * 0.01;
+        spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi));
+        
+        camera.position.setFromSpherical(spherical).add(new THREE.Vector3(gridWidth/2, gridHeight/2, 0));
+        camera.lookAt(gridWidth/2, gridHeight/2, 0);
+        
+        mouseX = event.clientX;
+        mouseY = event.clientY;
+        
+        renderer.render(scene, camera);
+    });
+    
+    // Add zoom with mouse wheel
+    renderer.domElement.addEventListener('wheel', (event) => {
+        const direction = new THREE.Vector3();
+        camera.getWorldDirection(direction);
+        
+        const distance = camera.position.distanceTo(new THREE.Vector3(gridWidth/2, gridHeight/2, 0));
+        const zoomSpeed = distance * 0.0005;
+        
+        if (event.deltaY > 0) {
+            camera.position.add(direction.multiplyScalar(-zoomSpeed * 10));
+        } else {
+            camera.position.add(direction.multiplyScalar(zoomSpeed * 10));
+        }
+        
+        renderer.render(scene, camera);
+        event.preventDefault();
+    });
+}
+
+function draw3DPackages() {
+    // Clear existing objects
+    while(scene.children.length > 2) { // Keep lights
+        scene.remove(scene.children[2]);
+    }
+    
+    let maxHeight = 0;
+    let packagesIntersectRoof = false;
+    
+    // Draw floor
+    const floorGeometry = new THREE.BoxGeometry(gridWidth, gridHeight, 5);
+    const floorMaterial = new THREE.MeshLambertMaterial({ color: 0xd3d3d3 });
+    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.position.set(gridWidth/2, gridHeight/2, -2.5);
+    scene.add(floor);
+    
+    // Draw packages
+    placedPackages.forEach(pkg => {
+        const ammoInfo = ammoDb[pkg.dodic];
+        let currentZ = 0;
+        let boxesPlaced = 0;
+        
+        for (let p = 0; p < pkg.numPalettes; p++) {
+            // Draw palette
+            const paletteGeometry = new THREE.BoxGeometry(pkg.totalX, pkg.totalY, pkg.paletteZ);
+            const paletteMaterial = new THREE.MeshLambertMaterial({ color: 0x8b4513 });
+            const palette = new THREE.Mesh(paletteGeometry, paletteMaterial);
+            palette.position.set(
+                pkg.x + pkg.totalX/2,
+                pkg.y + pkg.totalY/2,
+                currentZ + pkg.paletteZ/2
+            );
+            scene.add(palette);
+            
+            // Draw boxes on palette
+            const boxBaseZ = currentZ + pkg.paletteZ;
+            const boxesPerRow = Math.floor(pkg.totalX / pkg.boxX);
+            const boxesPerCol = Math.floor(pkg.totalY / pkg.boxY);
+            const boxesOnThisPalette = Math.min(pkg.numBoxes - boxesPlaced, pkg.boxesPerLevel * 3);
+            
+            let layer = 0;
+            let layerBoxesPlaced = 0;
+            
+            while (layerBoxesPlaced < boxesOnThisPalette) {
+                const layerZ = boxBaseZ + (layer * pkg.boxZ);
+                
+                for (let row = 0; row < boxesPerCol && layerBoxesPlaced < boxesOnThisPalette; row++) {
+                    for (let col = 0; col < boxesPerRow && layerBoxesPlaced < boxesOnThisPalette; col++) {
+                        const boxGeometry = new THREE.BoxGeometry(pkg.boxX, pkg.boxY, pkg.boxZ);
+                        const boxMaterial = new THREE.MeshLambertMaterial({ color: 0x87ceeb });
+                        const box = new THREE.Mesh(boxGeometry, boxMaterial);
+                        
+                        box.position.set(
+                            pkg.x + (col * pkg.boxX) + pkg.boxX/2,
+                            pkg.y + (row * pkg.boxY) + pkg.boxY/2,
+                            layerZ + pkg.boxZ/2
+                        );
+                        scene.add(box);
+                        
+                        layerBoxesPlaced++;
+                        boxesPlaced++;
+                        
+                        maxHeight = Math.max(maxHeight, layerZ + pkg.boxZ);
+                    }
+                }
+                layer++;
+                if (layer >= 3) break;
+            }
+            
+            currentZ = boxBaseZ + (layer * pkg.boxZ);
+        }
+        
+        // Check roof intersection
+        if (storageVisible) {
+            const wallHeight = 250;
+            const roofShape = 0.439;
+            
+            // Simple check: if package height exceeds wall height at any point
+            if (maxHeight > wallHeight) {
+                packagesIntersectRoof = true;
+            }
+        }
+    });
+    
+    // Draw shelves
+    shelves.forEach(shelf => {
+        const shelfGeometry = new THREE.BoxGeometry(shelf.totalX, shelf.totalY, shelf.shelfHeight);
+        const shelfMaterial = new THREE.MeshLambertMaterial({ color: 0xa0522d });
+        const shelfMesh = new THREE.Mesh(shelfGeometry, shelfMaterial);
+        shelfMesh.position.set(
+            shelf.x + shelf.totalX/2,
+            shelf.y + shelf.totalY/2,
+            shelf.shelfHeight/2
+        );
+        scene.add(shelfMesh);
+        
+        maxHeight = Math.max(maxHeight, shelf.shelfHeight);
+    });
+    
+    // Draw storage building if enabled
+    if (storageVisible) {
+        drawStorageBuilding(packagesIntersectRoof);
+    }
+    
+    renderer.render(scene, camera);
+}
+
+function drawStorageBuilding(intersectsRoof) {
+    const wallHeight = 250;
+    const roofShape = 0.439;
+    const wallThickness = 2;
+    
+    const wallColor = intersectsRoof ? 0xff0000 : 0x00ff00;
+    const roofColor = intersectsRoof ? 0x8b0000 : 0x006400;
+    
+    // Back wall
+    const backWallGeometry = new THREE.BoxGeometry(gridWidth, wallThickness, wallHeight);
+    const backWallMaterial = new THREE.MeshLambertMaterial({ color: wallColor });
+    const backWall = new THREE.Mesh(backWallGeometry, backWallMaterial);
+    backWall.position.set(gridWidth/2, gridHeight - wallThickness/2, wallHeight/2);
+    scene.add(backWall);
+    
+    // Left wall
+    const leftWallGeometry = new THREE.BoxGeometry(wallThickness, gridHeight, wallHeight);
+    const leftWallMaterial = new THREE.MeshLambertMaterial({ color: wallColor });
+    const leftWall = new THREE.Mesh(leftWallGeometry, leftWallMaterial);
+    leftWall.position.set(wallThickness/2, gridHeight/2, wallHeight/2);
+    scene.add(leftWall);
+    
+    // Right wall
+    const rightWallGeometry = new THREE.BoxGeometry(wallThickness, gridHeight, wallHeight);
+    const rightWallMaterial = new THREE.MeshLambertMaterial({ color: wallColor });
+    const rightWall = new THREE.Mesh(rightWallGeometry, rightWallMaterial);
+    rightWall.position.set(gridWidth - wallThickness/2, gridHeight/2, wallHeight/2);
+    scene.add(rightWall);
+    
+    // Curved roof
+    const roofGeometry = new THREE.CylinderGeometry(gridWidth/2, gridWidth/2, gridHeight, 16, 1, false, 0, Math.PI);
+    const roofMaterial = new THREE.MeshLambertMaterial({ color: roofColor, side: THREE.DoubleSide });
+    const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+    roof.position.set(gridWidth/2, gridHeight/2, wallHeight + gridWidth/4);
+    roof.rotation.z = Math.PI/2;
+    scene.add(roof);
+    
+    // Warning text if intersecting
+    if (intersectsRoof) {
+        // Create text warning (simplified - in a real app you might use TextGeometry)
+        console.log("WARNING: Height Exceeded");
+    }
+}
+
+function changeView(viewType) {
+    if (!camera) return;
+    
+    const centerX = gridWidth / 2;
+    const centerY = gridHeight / 2;
+    const distance = Math.max(gridWidth, gridHeight) * 1.2;
+    
+    switch (viewType) {
+        case 'top':
+            camera.position.set(centerX, centerY, distance);
+            camera.up.set(0, 1, 0);
+            break;
+        case 'front':
+            camera.position.set(centerX, -distance, distance * 0.5);
+            camera.up.set(0, 0, 1);
+            break;
+        case 'side':
+            camera.position.set(distance, centerY, distance * 0.5);
+            camera.up.set(0, 0, 1);
+            break;
+        case 'default':
+            camera.position.set(gridWidth * 0.8, gridHeight * 0.8, Math.max(gridWidth, gridHeight) * 0.8);
+            camera.up.set(0, 0, 1);
+            break;
+    }
+    
+    camera.lookAt(centerX, centerY, 0);
+    renderer.render(scene, camera);
+}
+
+function toggleStorageBuilding() {
+    storageVisible = !storageVisible;
+    draw3DPackages();
+}
+
+function returnTo2D() {
+    currentView = "2D";
+    
+    // Hide 3D view
+    document.getElementById('three-container').style.display = 'none';
+    
+    // Show 2D view
+    document.getElementById('canvas-container').classList.remove('hidden');
+    
+    // Cleanup 3D resources
+    if (renderer) {
+        renderer.dispose();
+        renderer = null;
+    }
+    if (scene) {
+        scene = null;
+    }
+    
+    drawGrid();
+    showStatus('Returned to 2D view.');
+}
+
+// File operations
+function saveToFile() {
+    if (!grid) {
+        showStatus('Please create a grid first.', 'error');
+        return;
+    }
+    
+    try {
+        // Create workbook
+        const wb = XLSX.utils.book_new();
+        
+        // Grid info sheet
+        const gridInfo = [{ width: gridWidth, height: gridHeight }];
+        const gridSheet = XLSX.utils.json_to_sheet(gridInfo);
+        XLSX.utils.book_append_sheet(wb, gridSheet, 'grid_info');
+        
+        // Prepare packages data
+        const allPackages = [...placedPackages];
+        
+        // Add shelves as special packages
+        shelves.forEach(shelf => {
+            allPackages.push({
+                uniqueId: `SHELF_${shelf.uniqueId}`,
+                dodic: shelf.shelfType,
+                amount: shelf.capacity,
+                numBoxes: 0,
+                numPalettes: 0,
+                x: shelf.x,
+                y: shelf.y,
+                totalX: shelf.totalX,
+                totalY: shelf.totalY,
+                boxesPerLevel: 0,
+                boxX: 0,
+                boxY: 0,
+                boxZ: 0,
+                paletteZ: shelf.shelfHeight
+            });
+        });
+        
+        // Add shelf contents
+        shelfContents.forEach(item => {
+            const ammoInfo = ammoDb[item.dodic];
+            allPackages.push({
+                uniqueId: `SHELF_${item.shelfId}/${item.packageId}`,
+                dodic: item.dodic,
+                amount: item.amount,
+                numBoxes: item.numBoxes,
+                numPalettes: 0,
+                x: 0, // Not relevant for shelf items
+                y: 0,
+                totalX: ammoInfo ? ammoInfo.boxX : 0,
+                totalY: ammoInfo ? ammoInfo.boxY : 0,
+                boxesPerLevel: 0,
+                boxX: ammoInfo ? ammoInfo.boxX : 0,
+                boxY: ammoInfo ? ammoInfo.boxY : 0,
+                boxZ: ammoInfo ? ammoInfo.boxZ : 0,
+                paletteZ: item.position
+            });
+        });
+        
+        // Packages sheet
+        const packagesSheet = XLSX.utils.json_to_sheet(allPackages);
+        XLSX.utils.book_append_sheet(wb, packagesSheet, 'placed_packages');
+        
+        // Ammo database sheet
+        const ammoArray = Object.entries(ammoDb).map(([dodic, info]) => ({
+            dodic,
+            ...info
+        }));
+        const ammoSheet = XLSX.utils.json_to_sheet(ammoArray);
+        XLSX.utils.book_append_sheet(wb, ammoSheet, 'ammo_db');
+        
+        // Save file
+        XLSX.writeFile(wb, 'ammunition_data.xlsx');
+        showStatus('Data saved successfully!');
+        
+    } catch (error) {
+        showStatus('Error saving file: ' + error.message, 'error');
+    }
+}
+
+function loadFromFile() {
+    document.getElementById('file-input').click();
+}
+
+function handleFileLoad(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            
+            // Check required sheets
+            if (!workbook.SheetNames.includes('grid_info') || 
+                !workbook.SheetNames.includes('placed_packages')) {
+                showStatus('Invalid file format. Missing required sheets.', 'error');
+                return;
+            }
+            
+            // Load grid info
+            const gridInfoSheet = workbook.Sheets['grid_info'];
+            const gridInfoData = XLSX.utils.sheet_to_json(gridInfoSheet);
+            
+            if (gridInfoData.length === 0) {
+                showStatus('Grid information is missing.', 'error');
+                return;
+            }
+            
+            gridWidth = parseFloat(gridInfoData[0].width);
+            gridHeight = parseFloat(gridInfoData[0].height);
+            
+            // Load packages
+            const packagesSheet = workbook.Sheets['placed_packages'];
+            const allPackages = XLSX.utils.sheet_to_json(packagesSheet);
+            
+            // Reset arrays
+            placedPackages = [];
+            shelves = [];
+            shelfContents = [];
+            
+            // Parse packages
+            allPackages.forEach(pkg => {
+                if (pkg.uniqueId.startsWith('SHELF_') && !pkg.uniqueId.includes('/')) {
+                    // This is a shelf
+                    const shelfId = pkg.uniqueId.replace('SHELF_', '');
+                    shelves.push({
+                        uniqueId: shelfId,
+                        x: pkg.x,
+                        y: pkg.y,
+                        totalX: pkg.totalX,
+                        totalY: pkg.totalY,
+                        shelfHeight: pkg.paletteZ,
+                        capacity: pkg.amount,
+                        shelfType: pkg.dodic
+                    });
+                } else if (pkg.uniqueId.startsWith('SHELF_') && pkg.uniqueId.includes('/')) {
+                    // This is a shelf item
+                    const parts = pkg.uniqueId.split('/');
+                    const shelfId = parts[0].replace('SHELF_', '');
+                    const packageId = parts[1];
+                    
+                    shelfContents.push({
+                        shelfId: shelfId,
+                        packageId: packageId,
+                        dodic: pkg.dodic,
+                        amount: pkg.amount,
+                        numBoxes: pkg.numBoxes,
+                        position: parseInt(pkg.paletteZ)
+                    });
+                } else {
+                    // Regular package
+                    placedPackages.push({
+                        uniqueId: pkg.uniqueId,
+                        dodic: pkg.dodic,
+                        amount: pkg.amount,
+                        numBoxes: pkg.numBoxes,
+                        numPalettes: pkg.numPalettes,
+                        x: pkg.x,
+                        y: pkg.y,
+                        totalX: pkg.totalX,
+                        totalY: pkg.totalY,
+                        boxesPerLevel: pkg.boxesPerLevel,
+                        boxX: pkg.boxX,
+                        boxY: pkg.boxY,
+                        boxZ: pkg.boxZ,
+                        paletteZ: pkg.paletteZ
+                    });
+                }
+            });
+            
+            // Update UI
+            document.getElementById('grid-width').value = gridWidth;
+            document.getElementById('grid-height').value = gridHeight;
+            
+            createGrid();
+            
+            showStatus(`Loaded ${placedPackages.length} packages and ${shelves.length} shelves successfully!`);
+            
+        } catch (error) {
+            showStatus('Error loading file: ' + error.message, 'error');
+        }
+    };
+    
+    reader.readAsArrayBuffer(file);
+    
+    // Clear the input
+    event.target.value = '';
+}
+
+// Initialize the application
+document.addEventListener('DOMContentLoaded', function() {
+    // Set up global keyboard handler for spacebar
+    document.addEventListener('keydown', function(event) {
+        if (event.code === 'Space' && event.target.tagName !== 'INPUT' && event.target.tagName !== 'TEXTAREA') {
+            toggleFocus();
+            event.preventDefault();
+        }
+    });
+    
+    // Close modals when clicking outside
+    window.addEventListener('click', function(event) {
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(modal => {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+    });
+    
+    showStatus('Application loaded. Create a grid to begin!', 'success');
+});
+</script>
+
+</body>
+</html>
